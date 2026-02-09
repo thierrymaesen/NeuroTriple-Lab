@@ -74,6 +74,13 @@ def afficher_banniere():
       print("  Laboratoire Pedagogique - Impact de l'entrainement")
       print("  sur la precision d'un reseau de neurones")
       print("=" * 65)
+      print("")
+      print("  " + "!" * 61)
+      print("  ! ATTENTION : Si votre ordinateur est peu puissant,       !")
+      print("  ! ne mettez pas des valeurs trop elevees pour les epochs  !")
+      print("  ! et les couches denses, sinon l'apprentissage sera       !")
+      print("  ! tres long ! Commencez petit et augmentez graduellement. !")
+      print("  " + "!" * 61)
 
 
 def creer_modele(couches_cachees=None):
@@ -671,6 +678,8 @@ def menu_principal():
         print("  6. Mode Interactif (tester le modele)")
         print("  0. Quitter")
         print("  " + "-" * 40)
+        print("  [!] PC lent ? Evitez epochs > 5000")
+        print("      et architectures trop profondes")
 
         choix = input("  Votre choix : ").strip()
 
