@@ -94,6 +94,18 @@ python neurotriplelab.py
 
 ---
 
+> ⚠️ **ATTENTION — Performance et temps de calcul**
+>
+> Le Deep Learning (apprentissage profond) est **très gourmand en ressources**. Si vous utilisez un ordinateur peu puissant (ancien PC, machine sans GPU), soyez prudent avec les paramètres suivants :
+>
+> - **Nombre d'epochs** : Au-delà de **5000 epochs**, le temps de calcul peut devenir très long. Commencez avec des valeurs modestes (500-1000) et augmentez progressivement.
+> - **Couches denses (Dense layers)** : Plus vous ajoutez de couches et de neurones (ex: `[256, 128, 64, 32, 16]`), plus chaque epoch prend du temps. Une architecture avec 5 couches de 256 neurones sera **beaucoup plus lente** qu'une simple couche de 64 neurones.
+> - **Combinaison des deux** : 5000 epochs × 5 couches denses = temps de calcul potentiellement **très élevé** !
+>
+> 💡 **Conseil** : Commencez petit (ex: 500 epochs, 1 couche de 64 neurones), observez les résultats, puis augmentez graduellement. C'est aussi une bonne leçon : en IA, trouver le bon compromis entre précision et temps de calcul fait partie du métier !
+
+---
+
 ## 📖 Utilisation
 
 Au lancement, un menu interactif s'affiche :
