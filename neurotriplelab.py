@@ -237,9 +237,9 @@ def sauvegarder_graphique_epochs(historiques, resultats):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
     # Graphique 1 : Courbes de loss
-        for epochs, loss in historiques:
-            ax1.plot(loss, label=f'{epochs} epochs')
-            ax1.set_title('Courbe de Loss par nombre d\'Epochs')
+    for epochs, loss in historiques:
+        ax1.plot(loss, label=f'{epochs} epochs')
+    ax1.set_title('Courbe de Loss par nombre d\'Epochs')
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('Loss (Erreur)')
     ax1.set_yscale('log')
