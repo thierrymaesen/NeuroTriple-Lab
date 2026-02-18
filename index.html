@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuroTriple-Lab | Interactive Neural Network Laboratory</title>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0e1a;--card:#111827;--accent:#00f0ff;--accent2:#a855f7;--accent3:#22d3ee;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--text:#e2e8f0;--text2:#94a3b8;--glow:0 0 20px rgba(0,240,255,0.3)}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;overflow-x:hidden;min-height:100vh}
+.particles-bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.container{max-width:1200px;margin:0 auto;padding:20px;position:relative;z-index:1}
+header{text-align:center;padding:30px 0 20px;position:relative}
+header h1{font-size:2.5em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-shadow:none;margin-bottom:5px}
+header .subtitle{color:var(--text2);font-size:1.1em;margin-bottom:15px}
+.lang-switch{display:flex;justify-content:center;gap:10px;margin-bottom:20px}
+.lang-btn{padding:8px 20px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:20px;cursor:pointer;transition:all 0.3s;font-size:0.9em}
+.lang-btn.active{background:var(--accent);color:var(--bg);box-shadow:var(--glow)}
+.lang-btn:hover{background:rgba(0,240,255,0.15)}
+.tabs{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin:20px 0}
+.tab{padding:10px 20px;background:var(--card);border:1px solid #1e293b;border-radius:10px;cursor:pointer;transition:all 0.3s;color:var(--text2);font-size:0.9em}
+.tab:hover{border-color:var(--accent);color:var(--text)}
+.tab.active{border-color:var(--accent);color:var(--accent);background:rgba(0,240,255,0.08);box-shadow:var(--glow)}
+.panel{display:none;animation:fadeIn 0.5s ease}
+.panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.card{background:var(--card);border:1px solid #1e293b;border-radius:16px;padding:24px;margin:16px 0;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent3));opacity:0.6}
+.card h2{color:var(--accent);font-size:1.3em;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.card h3{color:var(--accent2);font-size:1.1em;margin:12px 0 8px}
+canvas.neural-canvas{width:100%;height:300px;border-radius:12px;background:rgba(0,0,0,0.3)}
+.chart-container{position:relative;height:300px;margin:16px 0}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:16px 0}
+.controls label{color:var(--text2);font-size:0.9em}
+.controls select,.controls input[type="number"]{background:#1e293b;border:1px solid #334155;color:var(--text);padding:8px 14px;border-radius:8px;font-size:0.9em}
+.controls input[type="range"]{accent-color:var(--accent);width:150px}
+.btn{padding:12px 28px;border:none;border-radius:10px;font-size:1em;cursor:pointer;transition:all 0.3s;font-weight:600;display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#0891b2);color:var(--bg)}
+.btn-primary:hover{box-shadow:0 0 30px rgba(0,240,255,0.4);transform:translateY(-2px)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-secondary{background:linear-gradient(135deg,var(--accent2),#7c3aed);color:white}
+.btn-danger{background:linear-gradient(135deg,var(--danger),#dc2626);color:white}
+.progress-bar{width:100%;height:6px;background:#1e293b;border-radius:3px;overflow:hidden;margin:12px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width 0.3s;width:0%}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0}
+.stat-box{background:rgba(0,240,255,0.05);border:1px solid rgba(0,240,255,0.15);border-radius:12px;padding:16px;text-align:center}
+.stat-box .value{font-size:1.8em;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-box .label{color:var(--text2);font-size:0.8em;margin-top:4px}
+.results-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:0.9em}
+.results-table th{background:rgba(0,240,255,0.1);color:var(--accent);padding:12px;text-align:left;border-bottom:2px solid rgba(0,240,255,0.2)}
+.results-table td{padding:10px 12px;border-bottom:1px solid #1e293b}
+.results-table tr:hover{background:rgba(0,240,255,0.03)}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:0.8em;font-weight:600}
+.badge-excellent{background:rgba(16,185,129,0.15);color:var(--success)}
+.badge-good{background:rgba(34,211,238,0.15);color:var(--accent3)}
+.badge-medium{background:rgba(245,158,11,0.15);color:var(--warning)}
+.badge-poor{background:rgba(239,68,68,0.15);color:var(--danger)}
+.interactive-box{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin:16px 0}
+.interactive-box input[type="number"]{background:#1e293b;border:2px solid #334155;color:var(--text);padding:14px 20px;border-radius:12px;font-size:1.3em;width:160px;text-align:center;transition:border-color 0.3s}
+.interactive-box input[type="number"]:focus{border-color:var(--accent);outline:none;box-shadow:var(--glow)}
+.result-display{background:rgba(0,240,255,0.05);border:1px solid rgba(0,240,255,0.2);border-radius:12px;padding:16px;min-width:250px}
+.result-display .prediction{font-size:2em;font-weight:700;color:var(--accent)}
+.result-display .exact{color:var(--success);font-size:1.1em}
+.result-display .error-val{color:var(--warning);font-size:0.9em}
+#neuralNetCanvas{background:radial-gradient(ellipse at center,#0f172a 0%,#0a0e1a 100%)}
+.epoch-counter{font-size:1.4em;font-weight:700;color:var(--accent);text-align:center;margin:8px 0}
+.log-area{background:#0a0e1a;border:1px solid #1e293b;border-radius:8px;padding:12px;max-height:200px;overflow-y:auto;font-family:'Courier New',monospace;font-size:0.8em;color:var(--text2);margin:12px 0}
+.log-entry{padding:2px 0;border-bottom:1px solid #111827}
+.log-entry .epoch-num{color:var(--accent)}
+.log-entry .loss-val{color:var(--warning)}
+footer{text-align:center;padding:30px 0;color:var(--text2);font-size:0.85em;border-top:1px solid #1e293b;margin-top:30px}
+footer a{color:var(--accent);text-decoration:none}
+@media(max-width:768px){header h1{font-size:1.8em}.tabs{gap:4px}.tab{padding:8px 12px;font-size:0.8em}.controls{flex-direction:column}.stats-grid{grid-template-columns:1fr 1fr}.interactive-box{flex-direction:column}}
+.neuron-animation{position:relative;margin:12px 0}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+</style>
+</head>
+<body>
+<canvas class="particles-bg" id="particlesBg"></canvas>
+<div class="container">
+<header>
+<div class="lang-switch">
+<button class="lang-btn active" onclick="setLang('fr')">FR Francais</button>
+<button class="lang-btn" onclick="setLang('en')">EN English</button>
+</div>
+<h1>NeuroTriple-Lab</h1>
+<p class="subtitle" data-fr="Laboratoire Interactif de Reseaux de Neurones" data-en="Interactive Neural Network Laboratory"></p>
+<p style="color:var(--text2);font-size:0.95em" data-fr="Demontrer que plus on entraine une IA, plus elle est precise" data-en="Demonstrating that the more you train an AI, the more accurate it becomes"></p>
+</header>
+
+<div class="tabs">
+<button class="tab active" onclick="showPanel('training')" data-fr="Entrainement en Direct" data-en="Live Training">Entrainement en Direct</button>
+<button class="tab" onclick="showPanel('epochs')" data-fr="Comparaison Epochs" data-en="Epoch Comparison">Comparaison Epochs</button>
+<button class="tab" onclick="showPanel('architecture')" data-fr="Architectures" data-en="Architectures">Architectures</button>
+<button class="tab" onclick="showPanel('interactive')" data-fr="Mode Interactif" data-en="Interactive Mode">Mode Interactif</button>
+<button class="tab" onclick="showPanel('about')" data-fr="Comment ca marche ?" data-en="How does it work?">Comment ca marche ?</button>
+</div>
+
+<!-- ============ PANEL 1: LIVE TRAINING ============ -->
+<div class="panel active" id="panel-training">
+<div class="card">
+<h2 data-fr="Entrainement en Temps Reel" data-en="Real-Time Training">Entrainement en Temps Reel</h2>
+<p style="color:var(--text2);margin-bottom:12px" data-fr="Observez le reseau de neurones apprendre a tripler un nombre. Les connexions changent de couleur et d intensite pendant l apprentissage !" data-en="Watch the neural network learn to triple a number. Connections change color and intensity during training!"></p>
+<div class="controls">
+<label data-fr="Epochs :" data-en="Epochs:">Epochs :</label>
+<input type="number" id="trainEpochs" value="500" min="10" max="5000" step="10">
+<label data-fr="Architecture :" data-en="Architecture:">Architecture :</label>
+<select id="trainArch">
+<option value="simple" data-fr="Simple [64]" data-en="Simple [64]">Simple [64]</option>
+<option value="medium" data-fr="Moyenne [64,32]" data-en="Medium [64,32]" selected>Moyenne [64,32]</option>
+<option value="deep" data-fr="Profonde [128,64,32]" data-en="Deep [128,64,32]">Profonde [128,64,32]</option>
+</select>
+<button class="btn btn-primary" id="btnTrain" onclick="startLiveTraining()" data-fr="Lancer l Entrainement" data-en="Start Training">Lancer l Entrainement</button>
+<button class="btn btn-danger" id="btnStop" onclick="stopTraining()" style="display:none" data-fr="Arreter" data-en="Stop">Arreter</button>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="trainProgress"></div></div>
+<div class="epoch-counter" id="epochDisplay" data-fr="Pret a entrainer" data-en="Ready to train">Pret a entrainer</div>
+<div class="stats-grid" id="liveStats">
+<div class="stat-box"><div class="value" id="statEpoch">0</div><div class="label" data-fr="Epoch actuelle" data-en="Current Epoch">Epoch actuelle</div></div>
+<div class="stat-box"><div class="value" id="statLoss">-</div><div class="label" data-fr="Loss (Erreur)" data-en="Loss (Error)">Loss (Erreur)</div></div>
+<div class="stat-box"><div class="value" id="statAccuracy">-</div><div class="label" data-fr="Precision" data-en="Accuracy">Precision</div></div>
+<div class="stat-box"><div class="value" id="statTime">0s</div><div class="label" data-fr="Temps ecoule" data-en="Time elapsed">Temps ecoule</div></div>
+</div>
+</div>
+
+<div class="card">
+<h3 data-fr="Visualisation du Reseau de Neurones" data-en="Neural Network Visualization">Visualisation du Reseau de Neurones</h3>
+<canvas id="neuralNetCanvas" width="900" height="300"></canvas>
+</div>
+
+<div class="card">
+<h3 data-fr="Courbe de Loss en Direct" data-en="Live Loss Curve">Courbe de Loss en Direct</h3>
+<div class="chart-container"><canvas id="lossChart"></canvas></div>
+</div>
+
+<div class="card">
+<h3 data-fr="Predictions vs Realite" data-en="Predictions vs Reality">Predictions vs Realite</h3>
+<div class="chart-container"><canvas id="predChart"></canvas></div>
+</div>
+
+<div class="card">
+<h3 data-fr="Journal d Entrainement" data-en="Training Log">Journal d Entrainement</h3>
+<div class="log-area" id="trainingLog"></div>
+</div>
+</div>
+<!-- ============ PANEL 2: EPOCH COMPARISON ============ -->
+<div class="panel" id="panel-epochs">
+<div class="card">
+<h2 data-fr="Comparaison du Nombre d Epochs" data-en="Epoch Count Comparison">Comparaison du Nombre d Epochs</h2>
+<p style="color:var(--text2);margin-bottom:12px" data-fr="Entraine le meme modele avec differents nombres d epochs et compare la precision. Plus on entraine, plus l IA est precise !" data-en="Trains the same model with different epoch counts and compares accuracy. The more you train, the more accurate the AI becomes!"></p>
+<div class="controls">
+<label data-fr="Epochs a tester :" data-en="Epochs to test:">Epochs a tester :</label>
+<input type="text" id="epochsList" value="10,50,100,500,1000" style="background:#1e293b;border:1px solid #334155;color:var(--text);padding:8px 14px;border-radius:8px;width:250px" placeholder="10,50,100,500,1000">
+<button class="btn btn-primary" id="btnCompareEpochs" onclick="compareEpochs()" data-fr="Lancer la Comparaison" data-en="Start Comparison">Lancer la Comparaison</button>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="epochsProgress"></div></div>
+<div id="epochsStatus" style="color:var(--text2);margin:8px 0;text-align:center"></div>
+</div>
+<div class="card" id="epochsResultsCard" style="display:none">
+<h3 data-fr="Resultats Comparatifs" data-en="Comparative Results">Resultats Comparatifs</h3>
+<div class="chart-container"><canvas id="epochsBarChart"></canvas></div>
+<table class="results-table" id="epochsTable"><thead><tr>
+<th data-fr="Epochs" data-en="Epochs">Epochs</th>
+<th data-fr="Loss Finale" data-en="Final Loss">Loss Finale</th>
+<th data-fr="Erreur Moyenne" data-en="Average Error">Erreur Moyenne</th>
+<th data-fr="Temps" data-en="Time">Temps</th>
+<th data-fr="Qualite" data-en="Quality">Qualite</th>
+</tr></thead><tbody></tbody></table>
+</div>
+<div class="card" id="epochsLossCard" style="display:none">
+<h3 data-fr="Courbes de Loss Comparees" data-en="Compared Loss Curves">Courbes de Loss Comparees</h3>
+<div class="chart-container"><canvas id="epochsLossChart"></canvas></div>
+</div>
+</div>
+
+<!-- ============ PANEL 3: ARCHITECTURE COMPARISON ============ -->
+<div class="panel" id="panel-architecture">
+<div class="card">
+<h2 data-fr="Comparaison des Architectures" data-en="Architecture Comparison">Comparaison des Architectures</h2>
+<p style="color:var(--text2);margin-bottom:12px" data-fr="Teste differentes profondeurs de reseau avec le meme nombre d epochs pour voir l impact de l architecture." data-en="Test different network depths with the same number of epochs to see the impact of architecture."></p>
+<div class="controls">
+<label data-fr="Epochs fixes :" data-en="Fixed epochs:">Epochs fixes :</label>
+<input type="number" id="archEpochs" value="500" min="50" max="3000">
+<button class="btn btn-primary" id="btnCompareArch" onclick="compareArchitectures()" data-fr="Lancer la Comparaison" data-en="Start Comparison">Lancer la Comparaison</button>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="archProgress"></div></div>
+<div id="archStatus" style="color:var(--text2);margin:8px 0;text-align:center"></div>
+</div>
+<div class="card" id="archResultsCard" style="display:none">
+<h3 data-fr="Resultats par Architecture" data-en="Results by Architecture">Resultats par Architecture</h3>
+<div class="chart-container"><canvas id="archBarChart"></canvas></div>
+<table class="results-table" id="archTable"><thead><tr>
+<th data-fr="Architecture" data-en="Architecture">Architecture</th>
+<th data-fr="Parametres" data-en="Parameters">Parametres</th>
+<th data-fr="Erreur Moyenne" data-en="Average Error">Erreur Moyenne</th>
+<th data-fr="Temps" data-en="Time">Temps</th>
+<th data-fr="Qualite" data-en="Quality">Qualite</th>
+</tr></thead><tbody></tbody></table>
+</div>
+</div>
+
+<!-- ============ PANEL 4: INTERACTIVE MODE ============ -->
+<div class="panel" id="panel-interactive">
+<div class="card">
+<h2 data-fr="Mode Interactif" data-en="Interactive Mode">Mode Interactif</h2>
+<p style="color:var(--text2);margin-bottom:12px" data-fr="Entrainez d abord un modele, puis entrez n importe quel nombre pour voir la prediction de l IA !" data-en="First train a model, then enter any number to see the AI prediction!"></p>
+<div class="controls">
+<label data-fr="Epochs :" data-en="Epochs:">Epochs :</label>
+<input type="number" id="interEpochs" value="1000" min="100" max="5000">
+<button class="btn btn-primary" id="btnInterTrain" onclick="trainInteractive()" data-fr="Entrainer le Modele" data-en="Train Model">Entrainer le Modele</button>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="interProgress"></div></div>
+<div id="interStatus" style="color:var(--text2);margin:8px 0;text-align:center"></div>
+</div>
+<div class="card" id="interTestCard" style="display:none">
+<h3 data-fr="Testez le Modele Entraine" data-en="Test the Trained Model">Testez le Modele Entraine</h3>
+<div class="interactive-box">
+<div>
+<label style="color:var(--text2);display:block;margin-bottom:8px" data-fr="Entrez un nombre :" data-en="Enter a number:">Entrez un nombre :</label>
+<input type="number" id="interInput" value="7" step="any" oninput="predictInteractive()">
+</div>
+<div class="result-display">
+<div data-fr="Prediction IA :" data-en="AI Prediction:" style="color:var(--text2);font-size:0.9em">Prediction IA :</div>
+<div class="prediction" id="interPrediction">-</div>
+<div class="exact" id="interExact" data-fr="Valeur exacte : -" data-en="Exact value: -">Valeur exacte : -</div>
+<div class="error-val" id="interError" data-fr="Erreur : -" data-en="Error: -">Erreur : -</div>
+</div>
+</div>
+<div class="chart-container" style="height:250px"><canvas id="interChart"></canvas></div>
+</div>
+</div>
+<!-- ============ PANEL 5: ABOUT / HOW IT WORKS ============ -->
+<div class="panel" id="panel-about">
+<div class="card">
+<h2 data-fr="Comment ca marche ?" data-en="How does it work?">Comment ca marche ?</h2>
+<div style="color:var(--text2);line-height:1.8">
+<p data-fr="<b style='color:var(--accent)'>NeuroTriple-Lab</b> est un projet pedagogique qui utilise un <b>reseau de neurones</b> pour apprendre la fonction mathematique <code style='background:#1e293b;padding:2px 8px;border-radius:4px;color:var(--accent)'>f(x) = 3x</code> (tripler un nombre)." data-en="<b style='color:var(--accent)'>NeuroTriple-Lab</b> is an educational project that uses a <b>neural network</b> to learn the mathematical function <code style='background:#1e293b;padding:2px 8px;border-radius:4px;color:var(--accent)'>f(x) = 3x</code> (tripling a number)."></p>
+<br>
+<h3 data-fr="Le Reseau de Neurones" data-en="The Neural Network" style="color:var(--accent2);margin-bottom:8px">Le Reseau de Neurones</h3>
+<div style="background:#0a0e1a;padding:16px;border-radius:8px;font-family:monospace;text-align:center;margin:12px 0;color:var(--accent)">
+Entree (x) &rarr; [Couche 1: N neurones] &rarr; [Couche 2: N neurones] &rarr; ... &rarr; Sortie (3x)
+</div>
+<p data-fr="<b>Entree :</b> Un nombre (ex: 7)<br><b>Couches cachees :</b> Traitent l information avec des poids et des biais<br><b>Sortie :</b> La prediction du triple (ex: 21.0003)<br><b>Loss :</b> L erreur entre la prediction et la realite<br><b>Optimisation :</b> L algorithme Adam ajuste les poids pour reduire la loss<br><b>Epochs :</b> Nombre de fois que le reseau voit toutes les donnees" data-en="<b>Input:</b> A number (e.g., 7)<br><b>Hidden layers:</b> Process information with weights and biases<br><b>Output:</b> The triple prediction (e.g., 21.0003)<br><b>Loss:</b> The error between prediction and reality<br><b>Optimization:</b> The Adam algorithm adjusts weights to reduce the loss<br><b>Epochs:</b> Number of times the network sees all the data"></p>
+<br>
+<h3 data-fr="Pourquoi plus d epochs = plus de precision ?" data-en="Why more epochs = more accuracy?" style="color:var(--accent2);margin-bottom:8px">Pourquoi plus d epochs = plus de precision ?</h3>
+<p data-fr="A chaque epoch, le reseau ajuste legerement ses poids pour reduire l erreur. C est comme un eleve qui s ameliore en pratiquant :<br><br><b style='color:var(--danger)'>10 epochs</b> = L eleve a lu le cours une fois &rarr; resultats mediocres<br><b style='color:var(--warning)'>100 epochs</b> = L eleve a pratique un peu &rarr; resultats corrects<br><b style='color:var(--success)'>1000 epochs</b> = L eleve a pratique intensivement &rarr; resultats excellents" data-en="At each epoch, the network slightly adjusts its weights to reduce error. It is like a student improving through practice:<br><br><b style='color:var(--danger)'>10 epochs</b> = The student read the course once &rarr; poor results<br><b style='color:var(--warning)'>100 epochs</b> = The student practiced a little &rarr; decent results<br><b style='color:var(--success)'>1000 epochs</b> = The student practiced intensively &rarr; excellent results"></p>
+<br>
+<h3 data-fr="Technologies utilisees" data-en="Technologies used" style="color:var(--accent2);margin-bottom:8px">Technologies utilisees</h3>
+<p data-fr="<b>TensorFlow.js</b> : Le reseau de neurones tourne directement dans votre navigateur<br><b>Chart.js</b> : Graphiques dynamiques et animes<br><b>Canvas HTML5</b> : Visualisation du reseau de neurones<br><b>GitHub Pages</b> : Hebergement gratuit accessible a tous" data-en="<b>TensorFlow.js</b>: The neural network runs directly in your browser<br><b>Chart.js</b>: Dynamic and animated charts<br><b>HTML5 Canvas</b>: Neural network visualization<br><b>GitHub Pages</b>: Free hosting accessible to everyone"></p>
+</div>
+</div>
+</div>
+
+<footer>
+<p>NeuroTriple-Lab &copy; 2026 | <a href="https://github.com/thierrymaesen/NeuroTriple-Lab" target="_blank">GitHub Repository</a></p>
+<p style="margin-top:5px" data-fr="Projet educatif sous licence MIT - Plus on entraine, plus l IA est precise !" data-en="Educational project under MIT license - The more you train, the more accurate the AI becomes!"></p>
+</footer>
+</div>
+<script>
+// ========== GLOBAL STATE ==========
+let currentLang = 'fr';
+let currentModel = null;
+let interactiveModel = null;
+let isTraining = false;
+let stopRequested = false;
+let lossChart = null;
+let predChart = null;
+let epochsBarChart = null;
+let epochsLossChart = null;
+let archBarChart = null;
+let interChart = null;
+let neuralWeights = [];
+let neuralActivations = [];
+let animFrame = null;
+
+// Training data: f(x) = 3x
+const TRAIN_X = [1,2,3,4,5,6,7,8,9,10];
+const TRAIN_Y = [3,6,9,12,15,18,21,24,27,30];
+const TEST_X = [11,15,20,25,50,100];
+const TEST_Y = [33,45,60,75,150,300];
+
+// ========== LANGUAGE SYSTEM ==========
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.lang-btn').forEach(b => { if(b.textContent.startsWith(lang.toUpperCase())) b.classList.add('active'); });
+  document.querySelectorAll('[data-'+lang+']').forEach(el => {
+    const val = el.getAttribute('data-'+lang);
+    if(el.tagName==='INPUT'||el.tagName==='OPTION') el.textContent = val;
+    else el.innerHTML = val;
+  });
+}
+
+// ========== PANEL NAVIGATION ==========
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ========== MODEL CREATION ==========
+function getArchLayers(archName) {
+  const archs = { simple:[64], medium:[64,32], deep:[128,64,32] };
+  return archs[archName] || [64,32];
+}
+
+function createModel(layers) {
+  const model = tf.sequential();
+  model.add(tf.layers.dense({units:layers[0], inputShape:[1], activation:'relu'}));
+  for(let i=1;i<layers.length;i++) model.add(tf.layers.dense({units:layers[i], activation:'relu'}));
+  model.add(tf.layers.dense({units:1}));
+  model.compile({loss:'meanSquaredError', optimizer:tf.train.adam(0.01)});
+  return model;
+}
+
+function getModelParams(model) {
+  let total = 0;
+  model.getWeights().forEach(w => total += w.size);
+  return total;
+}
+
+// ========== NEURAL NETWORK VISUALIZATION ==========
+function drawNeuralNet(canvas, layers, activations, weights) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  
+  const allLayers = [1, ...layers, 1];
+  const numLayers = allLayers.length;
+  const maxNeurons = Math.min(Math.max(...allLayers), 8);
+  const layerSpacing = W / (numLayers + 1);
+  
+  const positions = [];
+  for(let l=0; l<numLayers; l++) {
+    const n = Math.min(allLayers[l], maxNeurons);
+    const neuronSpacing = H / (n + 1);
+    const layerPos = [];
+    for(let i=0; i<n; i++) {
+      layerPos.push({ x: layerSpacing * (l+1), y: neuronSpacing * (i+1) });
+    }
+    if(allLayers[l] > maxNeurons) {
+      layerPos.push({ x: layerSpacing * (l+1), y: H - 20, dots: true });
+    }
+    positions.push(layerPos);
+  }
+  
+  // Draw connections
+  for(let l=0; l<positions.length-1; l++) {
+    for(let i=0; i<positions[l].length; i++) {
+      if(positions[l][i].dots) continue;
+      for(let j=0; j<positions[l+1].length; j++) {
+        if(positions[l+1][j].dots) continue;
+        const w = weights.length > 0 ? (weights[l] || 0.5) : 0.3;
+        const intensity = Math.min(Math.abs(w) * 2, 1);
+        const hue = w > 0 ? 180 : 280;
+        ctx.beginPath();
+        ctx.moveTo(positions[l][i].x, positions[l][i].y);
+        ctx.lineTo(positions[l+1][j].x, positions[l+1][j].y);
+        ctx.strokeStyle = `hsla(${hue}, 100%, 60%, ${0.1 + intensity * 0.5})`;
+        ctx.lineWidth = 0.5 + intensity * 2;
+        ctx.stroke();
+      }
+    }
+  }
+  
+  // Draw neurons
+  for(let l=0; l<positions.length; l++) {
+    for(let i=0; i<positions[l].length; i++) {
+      const pos = positions[l][i];
+      if(pos.dots) {
+        ctx.fillStyle = 'rgba(148,163,184,0.6)';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('...', pos.x, pos.y);
+        continue;
+      }
+      const act = activations.length > l ? (activations[l] || 0) : 0;
+      const radius = 12 + act * 6;
+      const glow = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, radius*2);
+      
+      let color;
+      if(l===0) color = '#00f0ff';
+      else if(l===numLayers-1) color = '#10b981';
+      else color = '#a855f7';
+      
+      glow.addColorStop(0, color);
+      glow.addColorStop(0.5, color + '40');
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, radius*2, 0, Math.PI*2);
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, radius, 0, Math.PI*2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+  
+  // Layer labels
+  const labels = currentLang==='fr' ? ['Entree','','','','','Sortie'] : ['Input','','','','','Output'];
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  for(let l=0; l<positions.length; l++) {
+    const x = layerSpacing * (l+1);
+    let lbl = '';
+    if(l===0) lbl = labels[0] + ' (x)';
+    else if(l===numLayers-1) lbl = labels[5] + ' (3x)';
+    else lbl = (currentLang==='fr'?'Couche ':'Layer ') + l + ' [' + allLayers[l] + ']';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(lbl, x, H - 5);
+  }
+}
+// ========== PARTICLES BACKGROUND ==========
+function initParticles() {
+  const canvas = document.getElementById('particlesBg');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const particles = [];
+  for(let i=0;i<60;i++) {
+    particles.push({ x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:(Math.random()-0.5)*0.5, vy:(Math.random()-0.5)*0.5, r:Math.random()*2+0.5, o:Math.random()*0.3+0.1 });
+  }
+  function animate() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if(p.x<0||p.x>canvas.width) p.vx*=-1;
+      if(p.y<0||p.y>canvas.height) p.vy*=-1;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(0,240,255,${p.o})`;
+      ctx.fill();
+    });
+    // Connect nearby particles
+    for(let i=0;i<particles.length;i++) {
+      for(let j=i+1;j<particles.length;j++) {
+        const dx = particles[i].x-particles[j].x;
+        const dy = particles[i].y-particles[j].y;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        if(dist<150) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(0,240,255,${0.05*(1-dist/150)})`;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+  animate();
+  window.addEventListener('resize', () => { canvas.width=window.innerWidth; canvas.height=window.innerHeight; });
+}
+
+// ========== CHART INITIALIZATION ==========
+function initCharts() {
+  const defaultOpts = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color:'#94a3b8' } } }, scales:{ x:{ ticks:{color:'#94a3b8'}, grid:{color:'rgba(30,41,59,0.5)'} }, y:{ ticks:{color:'#94a3b8'}, grid:{color:'rgba(30,41,59,0.5)'} } } };
+  
+  lossChart = new Chart(document.getElementById('lossChart'), {
+    type:'line',
+    data:{ labels:[], datasets:[{ label:currentLang==='fr'?'Loss (Erreur)':'Loss (Error)', data:[], borderColor:'#00f0ff', backgroundColor:'rgba(0,240,255,0.1)', fill:true, tension:0.3, pointRadius:0 }] },
+    options:{...defaultOpts, scales:{...defaultOpts.scales, y:{...defaultOpts.scales.y, type:'logarithmic'}}, animation:{duration:0}}
+  });
+
+  predChart = new Chart(document.getElementById('predChart'), {
+    type:'scatter',
+    data:{ datasets:[
+      { label:currentLang==='fr'?'Prediction IA':'AI Prediction', data:[], backgroundColor:'#00f0ff', borderColor:'#00f0ff', pointRadius:6 },
+      { label:currentLang==='fr'?'Valeur exacte (3x)':'Exact value (3x)', data:[], backgroundColor:'#10b981', borderColor:'#10b981', pointRadius:6, pointStyle:'triangle' }
+    ]},
+    options:{...defaultOpts, animation:{duration:300}}
+  });
+}
+
+// ========== QUALITY BADGE ==========
+function qualityBadge(error) {
+  if(error < 0.5) return { class:'badge-excellent', fr:'Excellent', en:'Excellent' };
+  if(error < 2) return { class:'badge-good', fr:'Tres bon', en:'Very Good' };
+  if(error < 10) return { class:'badge-medium', fr:'Moyen', en:'Average' };
+  return { class:'badge-poor', fr:'Insuffisant', en:'Poor' };
+}
+
+// ========== EVALUATE MODEL ==========
+function evaluateModel(model) {
+  const xs = tf.tensor2d(TEST_X, [TEST_X.length, 1]);
+  const preds = model.predict(xs).dataSync();
+  xs.dispose();
+  let totalErr = 0;
+  const results = [];
+  for(let i=0; i<TEST_X.length; i++) {
+    const err = Math.abs(preds[i] - TEST_Y[i]);
+    totalErr += err;
+    results.push({ input:TEST_X[i], expected:TEST_Y[i], predicted:preds[i], error:err });
+  }
+  return { avgError: totalErr/TEST_X.length, results };
+                  }
+// ========== LIVE TRAINING ==========
+async function startLiveTraining() {
+  if(isTraining) return;
+  isTraining = true;
+  stopRequested = false;
+  
+  const epochs = parseInt(document.getElementById('trainEpochs').value);
+  const archName = document.getElementById('trainArch').value;
+  const layers = getArchLayers(archName);
+  
+  document.getElementById('btnTrain').disabled = true;
+  document.getElementById('btnStop').style.display = 'inline-flex';
+  document.getElementById('trainingLog').innerHTML = '';
+  
+  // Reset charts
+  lossChart.data.labels = [];
+  lossChart.data.datasets[0].data = [];
+  lossChart.update('none');
+  
+  // Create model
+  if(currentModel) currentModel.dispose();
+  currentModel = createModel(layers);
+  
+  const xs = tf.tensor2d(TRAIN_X, [TRAIN_X.length, 1]);
+  const ys = tf.tensor2d(TRAIN_Y, [TRAIN_Y.length, 1]);
+  
+  const canvas = document.getElementById('neuralNetCanvas');
+  drawNeuralNet(canvas, layers, [], []);
+  
+  const startTime = Date.now();
+  const lossHistory = [];
+  
+  for(let epoch = 1; epoch <= epochs; epoch++) {
+    if(stopRequested) break;
+    
+    const h = await currentModel.fit(xs, ys, { epochs:1, verbose:0 });
+    const loss = h.history.loss[0];
+    lossHistory.push(loss);
+    
+    // Update every few epochs or at start/end
+    const shouldUpdate = epoch <= 10 || epoch % Math.max(1, Math.floor(epochs/100)) === 0 || epoch === epochs;
+    
+    if(shouldUpdate) {
+      const elapsed = ((Date.now() - startTime)/1000).toFixed(1);
+      const progress = (epoch/epochs*100).toFixed(0);
+      
+      document.getElementById('trainProgress').style.width = progress + '%';
+      document.getElementById('statEpoch').textContent = epoch;
+      document.getElementById('statLoss').textContent = loss.toFixed(6);
+      document.getElementById('statTime').textContent = elapsed + 's';
+      
+      const eval_ = evaluateModel(currentModel);
+      document.getElementById('statAccuracy').textContent = eval_.avgError < 1 ? (100 - eval_.avgError).toFixed(1)+'%' : eval_.avgError.toFixed(2);
+      
+      const epochLabel = currentLang==='fr' ? 'Epoch ' + epoch + '/' + epochs : 'Epoch ' + epoch + '/' + epochs;
+      document.getElementById('epochDisplay').textContent = epochLabel + ' | Loss: ' + loss.toFixed(6);
+      
+      // Update loss chart
+      lossChart.data.labels.push(epoch);
+      lossChart.data.datasets[0].data.push(loss);
+      lossChart.update('none');
+      
+      // Update neural visualization with random activations based on loss
+      const act = [];
+      const wts = [];
+      for(let l=0; l<layers.length+2; l++) {
+        act.push(Math.random() * (1 - Math.min(loss/100, 0.9)));
+        wts.push((Math.random()-0.3) * (1 - Math.min(loss/50, 0.8)));
+      }
+      drawNeuralNet(canvas, layers, act, wts);
+      
+      // Log entry
+      const logArea = document.getElementById('trainingLog');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = '<span class="epoch-num">Epoch ' + epoch + '</span> | <span class="loss-val">Loss: ' + loss.toFixed(6) + '</span> | Err: ' + eval_.avgError.toFixed(4);
+      logArea.appendChild(entry);
+      logArea.scrollTop = logArea.scrollHeight;
+      
+      await tf.nextFrame();
+    }
+  }
+  
+  // Final evaluation and prediction chart
+  const finalEval = evaluateModel(currentModel);
+  predChart.data.datasets[0].data = finalEval.results.map(r => ({x:r.input, y:r.predicted}));
+  predChart.data.datasets[1].data = finalEval.results.map(r => ({x:r.input, y:r.expected}));
+  predChart.update();
+  
+  // Final neural net with good activations
+  const finalAct = layers.map(() => 0.8 + Math.random()*0.2);
+  finalAct.unshift(1); finalAct.push(1);
+  const finalWts = layers.map(() => 0.6 + Math.random()*0.4);
+  finalWts.unshift(0.8); finalWts.push(0.9);
+  drawNeuralNet(canvas, layers, finalAct, finalWts);
+  
+  const badge = qualityBadge(finalEval.avgError);
+  document.getElementById('epochDisplay').innerHTML = (currentLang==='fr' ? 'Entrainement termine ! ' : 'Training complete! ') + '<span class="badge '+badge.class+'">' + badge[currentLang] + '</span> | ' + (currentLang==='fr'?'Erreur moyenne: ':'Average error: ') + finalEval.avgError.toFixed(4);
+  
+  xs.dispose();
+  ys.dispose();
+  isTraining = false;
+  document.getElementById('btnTrain').disabled = false;
+  document.getElementById('btnStop').style.display = 'none';
+}
+
+function stopTraining() {
+  stopRequested = true;
+}
+// ========== EPOCH COMPARISON ==========
+async function compareEpochs() {
+  const epochsList = document.getElementById('epochsList').value.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>0);
+  if(epochsList.length===0) return;
+  
+  document.getElementById('btnCompareEpochs').disabled = true;
+  document.getElementById('epochsResultsCard').style.display = 'none';
+  document.getElementById('epochsLossCard').style.display = 'none';
+  
+  const xs = tf.tensor2d(TRAIN_X,[TRAIN_X.length,1]);
+  const ys = tf.tensor2d(TRAIN_Y,[TRAIN_Y.length,1]);
+  const results = [];
+  const allLossHistories = [];
+  
+  for(let idx=0; idx<epochsList.length; idx++) {
+    const ep = epochsList[idx];
+    document.getElementById('epochsStatus').textContent = (currentLang==='fr'?'Entrainement ':'Training ') + (idx+1)+'/'+epochsList.length+' ('+ep+' epochs)...';
+    document.getElementById('epochsProgress').style.width = ((idx+1)/epochsList.length*100)+'%';
+    
+    const model = createModel([64,32]);
+    const lossHist = [];
+    const start = Date.now();
+    
+    for(let e=1; e<=ep; e++) {
+      const h = await model.fit(xs,ys,{epochs:1,verbose:0});
+      lossHist.push(h.history.loss[0]);
+      if(e%Math.max(1,Math.floor(ep/20))===0) await tf.nextFrame();
+    }
+    
+    const elapsed = ((Date.now()-start)/1000).toFixed(1);
+    const eval_ = evaluateModel(model);
+    results.push({ epochs:ep, avgError:eval_.avgError, loss:lossHist[lossHist.length-1], time:elapsed });
+    allLossHistories.push({ epochs:ep, history:lossHist });
+    model.dispose();
+  }
+  
+  xs.dispose(); ys.dispose();
+  
+  // Display results
+  document.getElementById('epochsResultsCard').style.display = 'block';
+  document.getElementById('epochsLossCard').style.display = 'block';
+  document.getElementById('epochsStatus').textContent = currentLang==='fr'?'Comparaison terminee !':'Comparison complete!';
+  
+  // Bar chart
+  if(epochsBarChart) epochsBarChart.destroy();
+  epochsBarChart = new Chart(document.getElementById('epochsBarChart'), {
+    type:'bar',
+    data:{
+      labels:results.map(r=>r.epochs+' epochs'),
+      datasets:[{label:currentLang==='fr'?'Erreur Moyenne':'Average Error',data:results.map(r=>r.avgError),backgroundColor:results.map(r=>{const b=qualityBadge(r.avgError);return b.class==='badge-excellent'?'rgba(16,185,129,0.7)':b.class==='badge-good'?'rgba(34,211,238,0.7)':b.class==='badge-medium'?'rgba(245,158,11,0.7)':'rgba(239,68,68,0.7)'}),borderRadius:8}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{x:{ticks:{color:'#94a3b8'},grid:{color:'rgba(30,41,59,0.5)'}},y:{ticks:{color:'#94a3b8'},grid:{color:'rgba(30,41,59,0.5)'},type:'logarithmic'}}}
+  });
+  
+  // Loss curves
+  if(epochsLossChart) epochsLossChart.destroy();
+  const colors = ['#00f0ff','#a855f7','#10b981','#f59e0b','#ef4444','#ec4899','#6366f1'];
+  epochsLossChart = new Chart(document.getElementById('epochsLossChart'), {
+    type:'line',
+    data:{
+      labels:Array.from({length:Math.max(...epochsList)},(_,i)=>i+1),
+      datasets:allLossHistories.map((h,i)=>({label:h.epochs+' epochs',data:h.history,borderColor:colors[i%colors.length],backgroundColor:'transparent',tension:0.3,pointRadius:0}))
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{x:{ticks:{color:'#94a3b8',maxTicksLimit:10},grid:{color:'rgba(30,41,59,0.5)'}},y:{ticks:{color:'#94a3b8'},grid:{color:'rgba(30,41,59,0.5)'},type:'logarithmic'}},animation:{duration:0}}
+  });
+  
+  // Results table
+  const tbody = document.querySelector('#epochsTable tbody');
+  tbody.innerHTML = '';
+  results.forEach(r => {
+    const badge = qualityBadge(r.avgError);
+    tbody.innerHTML += '<tr><td><b>'+r.epochs+'</b></td><td>'+r.loss.toFixed(6)+'</td><td>'+r.avgError.toFixed(4)+'</td><td>'+r.time+'s</td><td><span class="badge '+badge.class+'">'+badge[currentLang]+'</span></td></tr>';
+  });
+  
+  document.getElementById('btnCompareEpochs').disabled = false;
+}
+// ========== ARCHITECTURE COMPARISON ==========
+async function compareArchitectures() {
+  const epochs = parseInt(document.getElementById('archEpochs').value);
+  const architectures = [
+    {name:currentLang==='fr'?'Simple [8]':'Simple [8]', layers:[8]},
+    {name:currentLang==='fr'?'Moyenne [64]':'Medium [64]', layers:[64]},
+    {name:currentLang==='fr'?'Double [64,32]':'Double [64,32]', layers:[64,32]},
+    {name:currentLang==='fr'?'Profonde [128,64,32]':'Deep [128,64,32]', layers:[128,64,32]},
+    {name:currentLang==='fr'?'Large [256]':'Wide [256]', layers:[256]}
+  ];
+  
+  document.getElementById('btnCompareArch').disabled = true;
+  document.getElementById('archResultsCard').style.display = 'none';
+  
+  const xs = tf.tensor2d(TRAIN_X,[TRAIN_X.length,1]);
+  const ys = tf.tensor2d(TRAIN_Y,[TRAIN_Y.length,1]);
+  const results = [];
+  
+  for(let idx=0; idx<architectures.length; idx++) {
+    const arch = architectures[idx];
+    document.getElementById('archStatus').textContent = (currentLang==='fr'?'Test ':'Testing ') + (idx+1)+'/'+architectures.length+': '+arch.name+'...';
+    document.getElementById('archProgress').style.width = ((idx+1)/architectures.length*100)+'%';
+    
+    const model = createModel(arch.layers);
+    const params = getModelParams(model);
+    const start = Date.now();
+    
+    for(let e=1; e<=epochs; e++) {
+      await model.fit(xs,ys,{epochs:1,verbose:0});
+      if(e%Math.max(1,Math.floor(epochs/10))===0) await tf.nextFrame();
+    }
+    
+    const elapsed = ((Date.now()-start)/1000).toFixed(1);
+    const eval_ = evaluateModel(model);
+    results.push({ name:arch.name, params, avgError:eval_.avgError, time:elapsed });
+    model.dispose();
+  }
+  
+  xs.dispose(); ys.dispose();
+  
+  document.getElementById('archResultsCard').style.display = 'block';
+  document.getElementById('archStatus').textContent = currentLang==='fr'?'Comparaison terminee !':'Comparison complete!';
+  
+  if(archBarChart) archBarChart.destroy();
+  archBarChart = new Chart(document.getElementById('archBarChart'), {
+    type:'bar',
+    data:{
+      labels:results.map(r=>r.name),
+      datasets:[{label:currentLang==='fr'?'Erreur Moyenne':'Average Error',data:results.map(r=>r.avgError),backgroundColor:results.map(r=>{const b=qualityBadge(r.avgError);return b.class==='badge-excellent'?'rgba(16,185,129,0.7)':b.class==='badge-good'?'rgba(34,211,238,0.7)':b.class==='badge-medium'?'rgba(245,158,11,0.7)':'rgba(239,68,68,0.7)'}),borderRadius:8}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{x:{ticks:{color:'#94a3b8'},grid:{color:'rgba(30,41,59,0.5)'}},y:{ticks:{color:'#94a3b8'},grid:{color:'rgba(30,41,59,0.5)'}}}}
+  });
+  
+  const tbody = document.querySelector('#archTable tbody');
+  tbody.innerHTML = '';
+  results.forEach(r => {
+    const badge = qualityBadge(r.avgError);
+    tbody.innerHTML += '<tr><td><b>'+r.name+'</b></td><td>'+r.params+'</td><td>'+r.avgError.toFixed(4)+'</td><td>'+r.time+'s</td><td><span class="badge '+badge.class+'">'+badge[currentLang]+'</span></td></tr>';
+  });
+  
+  document.getElementById('btnCompareArch').disabled = false;
+}
+
+// ========== INTERACTIVE MODE ==========
+async function trainInteractive() {
+  const epochs = parseInt(document.getElementById('interEpochs').value);
+  document.getElementById('btnInterTrain').disabled = true;
+  document.getElementById('interTestCard').style.display = 'none';
+  
+  if(interactiveModel) interactiveModel.dispose();
+  interactiveModel = createModel([128,64]);
+  
+  const xs = tf.tensor2d(TRAIN_X,[TRAIN_X.length,1]);
+  const ys = tf.tensor2d(TRAIN_Y,[TRAIN_Y.length,1]);
+  
+  for(let e=1; e<=epochs; e++) {
+    await interactiveModel.fit(xs,ys,{epochs:1,verbose:0});
+    if(e%Math.max(1,Math.floor(epochs/50))===0) {
+      document.getElementById('interStatus').textContent = (currentLang==='fr'?'Entrainement: ':'Training: ')+e+'/'+epochs;
+      document.getElementById('interProgress').style.width = (e/epochs*100)+'%';
+      await tf.nextFrame();
+    }
+  }
+  
+  xs.dispose(); ys.dispose();
+  
+  document.getElementById('interTestCard').style.display = 'block';
+  document.getElementById('interStatus').textContent = currentLang==='fr'?'Modele pret ! Testez-le ci-dessous.':'Model ready! Test it below.';
+  document.getElementById('btnInterTrain').disabled = false;
+  
+  // Create comparison chart
+  const testRange = Array.from({length:30},(_,i)=>i+1);
+  const preds = interactiveModel.predict(tf.tensor2d(testRange,[testRange.length,1])).dataSync();
+  
+  if(interChart) interChart.destroy();
+  interChart = new Chart(document.getElementById('interChart'), {
+    type:'line',
+    data:{
+      labels:testRange,
+      datasets:[
+        {label:currentLang==='fr'?'Prediction IA':'AI Prediction',data:Array.from(preds),borderColor:'#00f0ff',backgroundColor:'rgba(0,240,255,0.1)',fill:true,tension:0.3},
+        {label:currentLang==='fr'?'Valeur exacte (3x)':'Exact (3x)',data:testRange.map(x=>x*3),borderColor:'#10b981',borderDash:[5,5],backgroundColor:'transparent',tension:0}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{x:{title:{display:true,text:'x',color:'#94a3b8'},ticks:{color:'#94a3b8'},grid:{color:'rgba(30,41,59,0.5)'}},y:{title:{display:true,text:'f(x)=3x',color:'#94a3b8'},ticks:{color:'#94a3b8'},grid:{color:'rgba(30,41,59,0.5)'}}}}
+  });
+  
+  predictInteractive();
+}
+
+function predictInteractive() {
+  if(!interactiveModel) return;
+  const x = parseFloat(document.getElementById('interInput').value);
+  if(isNaN(x)) return;
+  const pred = interactiveModel.predict(tf.tensor2d([x],[1,1])).dataSync()[0];
+  const exact = x * 3;
+  const err = Math.abs(pred - exact);
+  document.getElementById('interPrediction').textContent = pred.toFixed(4);
+  document.getElementById('interExact').textContent = (currentLang==='fr'?'Valeur exacte : ':'Exact value: ') + exact.toFixed(1);
+  document.getElementById('interError').textContent = (currentLang==='fr'?'Erreur : ':'Error: ') + err.toFixed(4);
+}
+
+// ========== INITIALIZATION ==========
+window.addEventListener('DOMContentLoaded', () => {
+  initParticles();
+  initCharts();
+  setLang('fr');
+  const canvas = document.getElementById('neuralNetCanvas');
+  drawNeuralNet(canvas, [64,32], [], []);
+});
+</script>
+</body>
+</html>
